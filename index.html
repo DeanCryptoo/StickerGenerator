@@ -4,30 +4,28 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Sticker Forge — Telegram Pack Builder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
-  :root{
-    --bg:#0f1115;--panel:#151823;--muted:#8892a6;--text:#e6e9ef;--accent:#7c3aed;--accent-2:#22d3ee;--ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;
-    --card:#10131c;--border:#22273a;--shadow:0 10px 30px rgba(0,0,0,.35);
-    --radius:18px;
-  }
+  :root{--bg:#0f1115;--panel:#151823;--muted:#8892a6;--text:#e6e9ef;--accent:#7c3aed;--accent-2:#22d3ee;--ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;--card:#10131c;--border:#22273a;--shadow:0 10px 30px rgba(0,0,0,.35);--radius:18px}
   *{box-sizing:border-box}
-  body{margin:0;background:radial-gradient(1200px 800px at 10% -10%,rgba(34,211,238,.08),transparent),
-        radial-gradient(900px 700px at 120% 10%,rgba(124,58,237,.09),transparent),var(--bg);color:var(--text);font:14px/1.4 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Apple Color Emoji","Segoe UI Emoji"}
+  body{margin:0;background:radial-gradient(1200px 800px at 10% -10%,rgba(34,211,238,.08),transparent),radial-gradient(900px 700px at 120% 10%,rgba(124,58,237,.09),transparent),var(--bg);color:var(--text);font:14px/1.4 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Apple Color Emoji","Segoe UI Emoji"}
   h1{font-size:22px;margin:0}
   .app{display:grid;grid-template-columns:360px 1fr;min-height:100vh}
   aside{background:linear-gradient(180deg,rgba(255,255,255,.03),transparent 160px),var(--panel);border-right:1px solid var(--border);padding:18px 16px 22px;overflow:auto}
   main{padding:20px;overflow:auto}
   .brand{display:flex;align-items:center;gap:10px;margin-bottom:16px}
-  .logo{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 6px 16px rgba(124,58,237,.4)}
+  .logo{width:32px;height:32px;border-radius:10px;background:conic-gradient(from 210deg at 30% 30%,var(--accent),var(--accent-2));box-shadow:0 6px 16px rgba(124,58,237,.4);position:relative}
+  .logo::after{content:"";position:absolute;inset:6px;border-radius:8px;background:radial-gradient(8px 8px at 65% 35%,#fff6,transparent),linear-gradient(135deg,#1a1f33,#0c0f1a)}
+  .logo-lockup{display:flex;align-items:center;gap:10px}
+  .logo-text{font-weight:900;font-size:18px;background:linear-gradient(90deg,#c4b5fd,#67e8f9);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:.25px}
   .sub{color:var(--muted);font-size:12px}
   .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
   .section{padding:14px 14px 12px;margin-bottom:14px}
   .section h2{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0 0 10px}
   .grid{display:grid;gap:10px}
   .two{grid-template-columns:1fr 1fr}
-  .three{grid-template-columns:repeat(3,1fr)}
   label{display:block;font-weight:600;margin-bottom:6px}
-  input[type="text"], input[type="number"], select, textarea{width:100%;background:#0b0e15;border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:12px;outline:none}
+  input[type="text"], select, textarea{width:100%;background:#0b0e15;border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:12px;outline:none}
   textarea{min-height:72px;resize:vertical}
   .muted{color:var(--muted)}
   .drop{border:1.5px dashed #2a3150;border-radius:16px;padding:16px;text-align:center;background:rgba(124,58,237,.06)}
@@ -41,8 +39,11 @@
   .toolbar{display:flex;gap:8px;flex-wrap:wrap}
   .preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
   .thumb{position:relative;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.02),transparent),#0b0f17;border:1px solid var(--border);padding:8px;display:flex;align-items:center;justify-content:center;aspect-ratio:1/1}
-  .thumb canvas{max-width:100%;max-height:100%;}
-  .thumb .actions{position:absolute;bottom:8px;left:8px;right:8px;display:flex;gap:8px}
+  .thumb canvas{max-width:100%;max-height:100%}
+  .thumb .actions{position:absolute;bottom:8px;left:8px;right:8px;display:flex;gap:8px;opacity:0;transition:opacity .2s}
+  .thumb:hover .actions{opacity:1}
+  .thumb .hover-tools{position:absolute;top:8px;left:8px;display:flex;gap:8px;opacity:0;transition:opacity .2s}
+  .thumb:hover .hover-tools{opacity:1}
   .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:#0b0f17;padding:6px 8px;border-radius:999px}
   .list{display:grid;gap:6px;max-height:200px;overflow:auto}
   .list label{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px;font-weight:500}
@@ -55,7 +56,8 @@
   .kicker{font-size:11px;color:#9bb0ff}
   .badge{font-size:11px;background:#18223c;border:1px solid #263159;padding:3px 8px;border-radius:999px;color:#b8c4ff}
   .footer{color:var(--muted);font-size:12px;margin-top:6px}
-  .hidden{display:none}
+  .checkerboard{background:conic-gradient(#141824 25%, #0f1320 0 50%, #141824 0 75%, #0f1320 0) 0 0/20px 20px}
+  .type-preview{border-radius:12px;border:1px dashed #2a3150;padding:10px;background:linear-gradient(180deg,rgba(255,255,255,.02),transparent),#0b0f17}
 </style>
 </head>
 <body>
@@ -64,7 +66,7 @@
       <div class="brand">
         <div class="logo"></div>
         <div>
-          <h1>Sticker Forge</h1>
+          <div class="logo-lockup"><div class="logo-text">Sticker Forge</div></div>
           <div class="sub">Telegram pack builder for memecoins</div>
         </div>
       </div>
@@ -85,7 +87,7 @@
           <div class="two">
             <div>
               <label for="token">Token / Ticker</label>
-              <input id="token" type="text" placeholder="e.g. BG, BEASTLAB" />
+              <input id="token" type="text" placeholder="e.g. BEASTLAB, BG" />
               <div class="tiny muted">Used in presets as <span class="badge">{TOKEN}</span></div>
             </div>
             <div>
@@ -108,9 +110,14 @@
       </div>
 
       <div class="card section">
-        <h2>Typography</h2>
+        <h2>Typography <span class="tiny muted">(live preview)</span></h2>
         <div class="grid">
-          <div class="two">
+          <div class="type-preview">
+            <canvas id="typeCanvas" width="512" height="220" class="checkerboard" style="width:100%;border-radius:10px"></canvas>
+            <div class="tiny muted" style="margin-top:6px">This preview mirrors your settings using the sample text below.</div>
+            <input id="typeSample" type="text" value="GM {TOKEN} Army" style="margin-top:8px"/>
+          </div>
+          <div class="two" style="margin-top:8px">
             <div>
               <label for="fontFamily">Font family</label>
               <select id="fontFamily">
@@ -157,11 +164,11 @@
           <div class="two">
             <div>
               <label for="fill">Text color</label>
-              <input id="fill" type="color" value="#ffffff"/>
+              <input id="fill" type="color" value="#ff66ff"/>
             </div>
             <div>
               <label for="outline">Outline color</label>
-              <input id="outline" type="color" value="#000000"/>
+              <input id="outline" type="color" value="#672bd9"/>
             </div>
           </div>
           <div class="two">
@@ -181,7 +188,8 @@
         <div class="toolbar right">
           <button class="btn" id="clearBtn">Clear</button>
           <button class="btn primary" id="renderBtn">Render Stickers</button>
-          <button class="btn success" id="exportBtn">Export All</button>
+          <button class="btn" id="exportBtn">Export All</button>
+          <button class="btn success" id="zipBtn">Export ZIP</button>
         </div>
         <div class="footer">Exports as transparent <strong>PNG 512×512</strong> files. Telegram recommends &lt; 512KB per sticker.</div>
       </div>
@@ -206,11 +214,8 @@
 
 <script>
 (function(){
-  const MAX = 512; // Telegram sticker canvas
-  const state = {
-    images: [], // {name, img}
-    canvases: [],
-  };
+  const MAX = 512;
+  const state = { images: [], canvases: [] };
 
   // Elements
   const drop = document.getElementById('drop');
@@ -235,252 +240,90 @@
   const watermarkEl = document.getElementById('watermark');
   const customListEl = document.getElementById('customList');
 
+  const typeCanvas = document.getElementById('typeCanvas');
+  const typeSample = document.getElementById('typeSample');
+
   const renderBtn = document.getElementById('renderBtn');
   const exportBtn = document.getElementById('exportBtn');
   const clearBtn = document.getElementById('clearBtn');
+  const zipBtn = document.getElementById('zipBtn');
 
-  // Preset phrases tailored for memecoin culture
-  const PRESETS = [
-    'WAGMI', 'Only Up', 'Send It', 'Ape In', 'No FUD', 'No Spam!', 'Welcome!', 'Lock In', 'Key Figures', 'Live from {TOKEN}',
-    'GM {TOKEN} Army', 'GN {TOKEN} Fam', 'When Moon?', 'New ATH', 'Buy the Dip', 'Diamond Hands', 'Just Chill', 'We Moon Soon',
-    'Aped!', 'Zero to Hero', 'Born to {TOKEN}', 'Walk between the drops', 'Good night Honey', 'Good morning Ser', 'No Rug',
-    "Let's fucking go", 'Print Green', 'Charts Only Up', 'Dev Update', 'Community Call', 'Hodl!!!'
-  ];
+  const PRESETS = ['WAGMI','Only Up','Send It','Ape In','No FUD','No Spam!','Welcome!','Lock In','Key Figures','Live from {TOKEN}','GM {TOKEN} Army','GN {TOKEN} Fam','When Moon?','New ATH','Buy the Dip','Diamond Hands','Just Chill','We Moon Soon','Aped!','Zero to Hero','Born to {TOKEN}','Walk between the drops','Good night Honey','Good morning Ser','No Rug',"Let's fucking go",'Print Green','Charts Only Up','Dev Update','Community Call','Hodl!!!'];
 
-  // Build preset checklist
   function buildPresets(){
-    presetList.innerHTML = '';
-    PRESETS.forEach((p, i)=>{
-      const id = 'p_'+i;
-      const row = document.createElement('label');
-      row.innerHTML = `<input type="checkbox" id="${id}" checked> <span>${escapeHtml(p)}</span>`;
-      presetList.appendChild(row);
+    presetList.innerHTML='';
+    PRESETS.forEach((p,i)=>{
+      const id='p_'+i; const row=document.createElement('label');
+      row.innerHTML=`<input type="checkbox" id="${id}" checked> <span>${escapeHtml(p)}</span>`; presetList.appendChild(row);
     });
   }
+  function escapeHtml(str){ return str.replace(/[&<>\"]/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[s])); }
 
-  function escapeHtml(str){
-    return str.replace(/[&<>\"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[s]));
-  }
-
-  // File handling
-  ['dragenter','dragover'].forEach(evt=>drop.addEventListener(evt, e=>{e.preventDefault();drop.classList.add('drag');}));
-  ;['dragleave','drop'].forEach(evt=>drop.addEventListener(evt, e=>{e.preventDefault();drop.classList.remove('drag');}));
-  drop.addEventListener('drop', (e)=> handleFiles(e.dataTransfer.files));
-  browseBtn.addEventListener('click', ()=> fileInput.click());
-  fileInput.addEventListener('change', ()=> handleFiles(fileInput.files));
+  // Uploads
+  ['dragenter','dragover'].forEach(evt=>drop.addEventListener(evt,e=>{e.preventDefault();drop.classList.add('drag')}));
+  ;['dragleave','drop'].forEach(evt=>drop.addEventListener(evt,e=>{e.preventDefault();drop.classList.remove('drag')}));
+  drop.addEventListener('drop', e=>handleFiles(e.dataTransfer.files));
+  browseBtn.addEventListener('click',()=>fileInput.click());
+  fileInput.addEventListener('change',()=>handleFiles(fileInput.files));
 
   function handleFiles(files){
-    const list = Array.from(files).filter(f=>/^image\//.test(f.type));
-    if(!list.length) return;
-    let loaded = 0;
-    list.forEach(file=>{
-      const img = new Image();
-      img.onload = ()=>{
-        state.images.push({name: file.name.replace(/\.[^.]+$/, ''), img});
-        loaded++;
-        if(loaded===list.length) updateFileList();
-      };
-      img.onerror = ()=> console.warn('Failed to load', file.name);
-      img.src = URL.createObjectURL(file);
-    });
+    const list=Array.from(files).filter(f=>/^image\//.test(f.type)); if(!list.length) return; let loaded=0;
+    list.forEach(file=>{ const img=new Image(); img.onload=()=>{state.images.push({name:file.name.replace(/\.[^.]+$/, ''), img}); loaded++; if(loaded===list.length) updateFileList();}; img.onerror=()=>console.warn('Failed',file.name); img.src=URL.createObjectURL(file); });
   }
+  function updateFileList(){ fileList.innerHTML = state.images.length? state.images.map((f,i)=>`<span class="badge">${i+1}</span> ${escapeHtml(f.name)}`).join('<br/>') : 'No files yet.' }
 
-  function updateFileList(){
-    if(!state.images.length){fileList.textContent='No files yet.';return;}
-    fileList.innerHTML = state.images.map((f,i)=>`<span class="badge">${i+1}</span> ${escapeHtml(f.name)}`).join('<br/>');
-  }
+  // Text helpers
+  function normalizeCase(s){ const m=letterCaseEl.value; if(m==='upper') return s.toUpperCase(); if(m==='lower') return s.toLowerCase(); return s.replace(/\w\S*/g,w=>w[0].toUpperCase()+w.slice(1).toLowerCase()); }
+  function wrapLines(ctx,text,max){ const words=text.split(' '), lines=[]; let line=''; for(const w of words){ const test=line?line+' '+w:w; if(ctx.measureText(test).width>max&&line){lines.push(line); line=w;} else line=test;} if(line) lines.push(line); return lines; }
 
-  // Sticker rendering
-  function normalizeCase(s){
-    const mode = letterCaseEl.value;
-    if(mode==='upper') return s.toUpperCase();
-    if(mode==='lower') return s.toLowerCase();
-    // Title Case
-    return s.replace(/\w\S*/g, w=>w[0].toUpperCase()+w.slice(1).toLowerCase());
-  }
-
-  function compilePhrases(){
-    const token = tokenEl.value.trim() || '{TOKEN}';
-    const chosen = PRESETS.filter((_,i)=> document.getElementById('p_'+i).checked);
-    const customs = (customListEl.value||'').split(',').map(s=>s.trim()).filter(Boolean);
-    return [...chosen, ...customs].map(s=> s.replaceAll('{TOKEN}', token));
-  }
-
-  function fitAndCenter(ctx, img){
-    const W = MAX, H = MAX;
-    const scale = Math.min(W / img.width, H / img.height);
-    const w = img.width * scale;
-    const h = img.height * scale;
-    const x = (W - w)/2, y = (H - h)/2;
-    ctx.drawImage(img, x, y, w, h);
-  }
-
-  function wrapLines(ctx, text, maxWidth){
-    const words = text.split(' ');
-    const lines = [];
-    let line = '';
-    for(const word of words){
-      const test = line ? line + ' ' + word : word;
-      if(ctx.measureText(test).width > maxWidth && line){
-        lines.push(line); line = word;
-      }else{ line = test; }
-    }
-    if(line) lines.push(line);
-    return lines;
-  }
-
-  function drawCaption(ctx, text, position){
-    if(!text) return;
-    const pad = +paddingEl.value;
-    const size = +fontSizeEl.value;
-    const stroke = +strokeEl.value;
-    const lh = +lineHeightEl.value;
-    ctx.save();
-    ctx.font = `700 ${size}px ${fontFamilyEl.value}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'alphabetic';
-    ctx.fillStyle = fillEl.value;
-    ctx.lineWidth = stroke * 2; // canvas stroke is centered
-    ctx.strokeStyle = outlineEl.value;
-    if(shadowEl.checked){
-      ctx.shadowColor = 'rgba(0,0,0,.35)';
-      ctx.shadowBlur = Math.max(8, size/6);
-      ctx.shadowOffsetY = Math.max(2, size/12);
-    }
-    const maxWidth = MAX - pad*2;
-    const lines = wrapLines(ctx, text, maxWidth);
-    const totalHeight = lines.length * size * lh;
-    let y; const x = MAX/2;
-    if(position==='top'){
-      y = pad + size; // top baseline for first line
-    } else {
-      y = MAX - pad - (totalHeight - size*0.2); // bottom block
-    }
-    for(const line of lines){
-      if(stroke>0) ctx.strokeText(line, x, y);
-      ctx.fillText(line, x, y);
-      y += size * lh;
-    }
+  // Clean stroke + fill draw (no weird spikes)
+  function drawBlock(ctx, text, x, y, maxWidth){
+    const size=+fontSizeEl.value, pad=+paddingEl.value, stroke=+strokeEl.value, lh=+lineHeightEl.value;
+    ctx.font=`700 ${size}px ${fontFamilyEl.value}`; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+    const lines=wrapLines(ctx,text,maxWidth);
+    // stroke first WITHOUT shadow, rounded joins
+    ctx.save(); ctx.lineJoin='round'; ctx.lineCap='round'; ctx.miterLimit=2; ctx.strokeStyle=outlineEl.value; ctx.lineWidth=Math.max(1, stroke*1.5); ctx.shadowColor='transparent';
+    for(const line of lines){ if(stroke>0) ctx.strokeText(line,x,y); y+=size*lh; }
+    ctx.restore();
+    // fill with optional shadow
+    y -= lines.length*size*lh; // reset
+    ctx.save(); if(shadowEl.checked){ ctx.shadowColor='rgba(0,0,0,.35)'; ctx.shadowBlur=Math.max(8,size/6); ctx.shadowOffsetY=Math.max(2,size/12);} ctx.fillStyle=fillEl.value;
+    for(const line of lines){ ctx.fillText(line,x,y); y+=size*lh; }
     ctx.restore();
   }
 
-  function drawWatermark(ctx){
-    if(!watermarkEl.checked) return;
-    ctx.save();
-    ctx.font = `600 12px ${fontFamilyEl.value}`;
-    ctx.fillStyle = 'rgba(255,255,255,.65)';
-    ctx.strokeStyle = 'rgba(0,0,0,.55)';
-    ctx.lineWidth = 2;
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'bottom';
-    const text = 'Sticker Forge';
-    ctx.strokeText(text, MAX-8, MAX-6);
-    ctx.fillText(text, MAX-8, MAX-6);
-    ctx.restore();
-  }
+  // Type preview
+  function renderTypePreview(){ const ctx=typeCanvas.getContext('2d'); ctx.clearRect(0,0,typeCanvas.width,typeCanvas.height); const token=tokenEl.value.trim()||'{TOKEN}'; const raw=typeSample.value.replaceAll('{TOKEN}',token); const text=normalizeCase(raw); const pad=+paddingEl.value; drawBlock(ctx,text,typeCanvas.width/2,50,typeCanvas.width-pad*2); drawGuide(ctx); }
+  function drawGuide(ctx){ ctx.save(); ctx.strokeStyle='rgba(124,58,237,.35)'; ctx.setLineDash([6,6]); const pad=+paddingEl.value; ctx.strokeRect(pad,10,typeCanvas.width-pad*2,typeCanvas.height-20); ctx.restore(); }
 
-  function makeCanvas(){
-    const c = document.createElement('canvas');
-    c.width = MAX; c.height = MAX;
-    return c;
-  }
+  // Stickers
+  function compilePhrases(){ const token=tokenEl.value.trim()||'{TOKEN}'; const chosen=PRESETS.filter((_,i)=>document.getElementById('p_'+i).checked); const customs=(customListEl.value||'').split(',').map(s=>s.trim()).filter(Boolean); return [...chosen,...customs].map(s=>s.replaceAll('{TOKEN}',token)); }
+  function fitAndCenter(ctx,img){ const W=MAX,H=MAX; const scale=Math.min(W/img.width,H/img.height); const w=img.width*scale,h=img.height*scale; ctx.drawImage(img,(W-w)/2,(H-h)/2,w,h); }
+  function drawCaption(ctx,text,position){ if(!text) return; const pad=+paddingEl.value; const x=MAX/2; const size=+fontSizeEl.value, lh=+lineHeightEl.value; const lines=wrapLines(ctx,text,MAX-pad*2); const total=lines.length*size*lh; let y=(position==='top')? pad+size : MAX - pad - (total - size*0.2); ctx.font=`700 ${size}px ${fontFamilyEl.value}`; ctx.textAlign='center'; ctx.textBaseline='alphabetic'; drawBlock(ctx, lines.join('\n'), x, y, MAX-pad*2); }
+  function drawWatermark(ctx){ if(!watermarkEl.checked) return; ctx.save(); ctx.font=`600 12px ${fontFamilyEl.value}`; ctx.fillStyle='rgba(255,255,255,.65)'; ctx.strokeStyle='rgba(0,0,0,.55)'; ctx.lineWidth=2; ctx.textAlign='right'; ctx.textBaseline='bottom'; const t='Sticker Forge'; ctx.strokeText(t,MAX-8,MAX-6); ctx.fillText(t,MAX-8,MAX-6); ctx.restore(); }
 
-  function clearGrid(){
-    grid.innerHTML = '';
-    state.canvases = [];
-    count.textContent = '0';
-  }
+  function makeCanvas(){ const c=document.createElement('canvas'); c.width=MAX; c.height=MAX; return c; }
+  function clearGrid(){ grid.innerHTML=''; state.canvases=[]; count.textContent='0'; }
 
-  function render(){
-    if(!state.images.length){alert('Upload at least one image first.');return;}
-    clearGrid();
-    const phrases = styleEl.value==='none' ? [''] : compilePhrases();
+  function render(){ if(!state.images.length){alert('Upload at least one image first.');return;} clearGrid(); const phrases = styleEl.value==='none' ? [''] : compilePhrases(); state.images.forEach(file=>{ phrases.forEach(phrase=>{ const top=(styleEl.value==='top'||styleEl.value==='both')? normalizeCase(phrase):''; const bot=(styleEl.value==='bottom'||styleEl.value==='both')? normalizeCase(phrase):''; const c=makeCanvas(), ctx=c.getContext('2d'); ctx.clearRect(0,0,MAX,MAX); fitAndCenter(ctx,file.img); drawCaption(ctx,top,'top'); drawCaption(ctx,bot,'bottom'); drawWatermark(ctx); addThumb(c,`${file.name}__${phrase||'plain'}`,file); }); }); count.textContent=state.canvases.length; }
 
-    state.images.forEach((file)=>{
-      phrases.forEach((phrase)=>{
-        const topText = (styleEl.value==='top' || styleEl.value==='both') ? normalizeCase(phrase) : '';
-        const bottomText = (styleEl.value==='bottom' || styleEl.value==='both') ? normalizeCase(phrase) : '';
-        const c = makeCanvas();
-        const ctx = c.getContext('2d');
-        ctx.clearRect(0,0,MAX,MAX);
-        fitAndCenter(ctx, file.img);
-        // captions on top of image
-        drawCaption(ctx, topText, 'top');
-        drawCaption(ctx, bottomText, 'bottom');
-        drawWatermark(ctx);
-        addThumb(c, `${file.name}__${phrase || 'plain'}`);
-      });
-    });
-    count.textContent = state.canvases.length;
-  }
+  // Simple BG removal
+  function removeBackgroundFromImage(img,tol=38){ const temp=document.createElement('canvas'); temp.width=img.width; temp.height=img.height; const tctx=temp.getContext('2d'); tctx.drawImage(img,0,0); const id=tctx.getImageData(0,0,temp.width,temp.height); const d=id.data; function sample(x,y){const i=(y*id.width+x)*4; return [d[i],d[i+1],d[i+2]];} const s=[sample(0,0),sample(id.width-1,0),sample(0,id.height-1),sample(id.width-1,id.height-1)]; const bg=s.reduce((a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],[0,0,0]).map(v=>v/4); for(let i=0;i<d.length;i+=4){ const dr=d[i]-bg[0], dg=d[i+1]-bg[1], db=d[i+2]-bg[2]; const dist=Math.sqrt(dr*dr+dg*dg+db*db); if(dist<tol || d[i+3]<10) d[i+3]=0; } tctx.putImageData(id,0,0); const cleaned=new Image(); cleaned.src=temp.toDataURL(); return cleaned; }
+  function addHoverTools(container,file){ const tools=document.createElement('div'); tools.className='hover-tools'; const rm=document.createElement('button'); rm.className='btn'; rm.textContent='Remove BG'; rm.title='Quick background remover (solid bg)'; rm.addEventListener('click',()=>{ const newImg=removeBackgroundFromImage(file.img); newImg.onload=()=>{file.img=newImg; render();}; }); tools.appendChild(rm); container.appendChild(tools); }
 
-  function addThumb(canvas, baseName){
-    const wrap = document.createElement('div');
-    wrap.className = 'thumb';
-    const actions = document.createElement('div');
-    actions.className = 'actions';
-    const a = document.createElement('a');
-    a.className = 'btn';
-    a.textContent = 'PNG';
-    a.download = sanitize(baseName)+'.png';
-    a.href = canvas.toDataURL('image/png');
-    actions.appendChild(a);
+  function addThumb(canvas, baseName, file){ const wrap=document.createElement('div'); wrap.className='thumb checkerboard'; const actions=document.createElement('div'); actions.className='actions'; const a=document.createElement('a'); a.className='btn'; a.textContent='PNG'; a.download=sanitize(baseName)+'.png'; a.href=canvas.toDataURL('image/png'); actions.appendChild(a); const copyBtn=document.createElement('button'); copyBtn.className='btn'; copyBtn.textContent='Copy'; copyBtn.addEventListener('click',()=>{ canvas.toBlob(async (blob)=>{ try{ await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]); copyBtn.textContent='Copied!'; setTimeout(()=>copyBtn.textContent='Copy',1200);}catch(e){ alert('Clipboard not supported: '+e);} }); }); actions.appendChild(copyBtn); wrap.appendChild(canvas); wrap.appendChild(actions); addHoverTools(wrap,file); grid.appendChild(wrap); state.canvases.push({canvas, name:a.download}); }
+  function sanitize(s){ return s.replace(/[^a-z0-9_\-]+/gi,'_').slice(0,80); }
 
-    const copyBtn = document.createElement('button');
-    copyBtn.className = 'btn';
-    copyBtn.textContent = 'Copy';
-    copyBtn.addEventListener('click', async ()=>{
-      canvas.toBlob(async (blob)=>{
-        try{
-          await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
-          copyBtn.textContent = 'Copied!';
-          setTimeout(()=>copyBtn.textContent='Copy',1200);
-        }catch(err){
-          alert('Clipboard not supported: '+err);
-        }
-      }, 'image/png');
-    });
-    actions.appendChild(copyBtn);
+  async function exportAll(){ if(!state.canvases.length){alert('Nothing to export. Render stickers first.');return;} for(const {canvas,name} of state.canvases){ const url=canvas.toDataURL('image/png'); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); await new Promise(r=>setTimeout(r,150)); } }
+  async function exportZip(){ if(!state.canvases.length){alert('Nothing to export. Render stickers first.');return;} const zip=new JSZip(); for(const {canvas,name} of state.canvases){ const blob=await new Promise(res=>canvas.toBlob(res,'image/png')); zip.file(name, blob);} const content=await zip.generateAsync({type:'blob'}); const a=document.createElement('a'); a.href=URL.createObjectURL(content); a.download='stickers.zip'; document.body.appendChild(a); a.click(); a.remove(); }
 
-    wrap.appendChild(canvas);
-    wrap.appendChild(actions);
-    grid.appendChild(wrap);
-    state.canvases.push({canvas, name: a.download});
-  }
+  function connectRange(id,out){ const el=document.getElementById(id), label=document.getElementById(out); const sync=()=>{ label.textContent=(id==='lineHeight'? parseFloat(el.value).toFixed(2): el.value); renderTypePreview(); }; el.addEventListener('input',sync); sync(); }
+  ;['input','change'].forEach(evt=>{ tokenEl.addEventListener(evt,renderTypePreview); fontFamilyEl.addEventListener(evt,renderTypePreview); letterCaseEl.addEventListener(evt,renderTypePreview); fillEl.addEventListener(evt,renderTypePreview); outlineEl.addEventListener(evt,renderTypePreview); shadowEl.addEventListener(evt,renderTypePreview); typeSample.addEventListener(evt,renderTypePreview); });
+  connectRange('fontSize','fontSizeVal'); connectRange('stroke','strokeVal'); connectRange('padding','paddingVal'); connectRange('lineHeight','lineHeightVal');
 
-  function sanitize(s){
-    return s.replace(/[^a-z0-9_\-]+/gi,'_').slice(0,80);
-  }
+  renderBtn.addEventListener('click',render); exportBtn.addEventListener('click',exportAll); clearBtn.addEventListener('click',()=>{state.images=[];updateFileList();grid.innerHTML='';state.canvases=[];count.textContent='0';}); zipBtn.addEventListener('click',exportZip);
 
-  // Export all by triggering sequential downloads
-  async function exportAll(){
-    if(!state.canvases.length){alert('Nothing to export. Render stickers first.');return;}
-    for(const {canvas, name} of state.canvases){
-      const url = canvas.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
-      await new Promise(r=>setTimeout(r, 150)); // throttle
-    }
-  }
-
-  // Controls live labels
-  function connectRange(id, out){
-    const el = document.getElementById(id), label = document.getElementById(out);
-    const sync = ()=> label.textContent = (id==='lineHeight' ? parseFloat(el.value).toFixed(2) : el.value);
-    el.addEventListener('input', sync); sync();
-  }
-
-  connectRange('fontSize','fontSizeVal');
-  connectRange('stroke','strokeVal');
-  connectRange('padding','paddingVal');
-  connectRange('lineHeight','lineHeightVal');
-
-  // Actions
-  renderBtn.addEventListener('click', render);
-  exportBtn.addEventListener('click', exportAll);
-  clearBtn.addEventListener('click', ()=>{state.images=[];updateFileList();clearGrid();});
-
-  buildPresets();
+  buildPresets(); renderTypePreview();
 })();
 </script>
 </body>
