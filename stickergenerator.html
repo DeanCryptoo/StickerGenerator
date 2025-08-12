@@ -222,7 +222,42 @@
   function makeCanvas(){ const c=document.createElement('canvas'); c.width=MAX; c.height=MAX; return c; }
   function clearGrid(){ grid.innerHTML=''; state.canvases=[]; count.textContent='0'; }
 
-  function render(){ if(!state.images.length){alert('Upload at least one image first.');return;} clearGrid(); const phrases = styleEl.value==='none' ? [''] : compilePhrases(); state.images.forEach(file=>{ phrases.forEach(phrase=>{ const top=(styleEl.value==='top'||styleEl.value==='both')? normalizeCase(phrase):''; const bot=(styleEl.value==='bottom'||styleEl.value==='both')? normalizeCase(phrase):''; const c=makeCanvas(), ctx=c.getContext('2d'); ctx.clearRect(0,0,MAX,MAX); fitAndCenter(ctx,file.img); drawCaption(ctx,top,'top'); drawCaption(ctx,bot,'bottom'); drawWatermark(ctx); addThumb(c,`${file.name}__${phrase||'plain'}`,file); }); }); count.textContent=state.canvases.length; }
+function render(){
+  if(!state.images.length){ alert('Upload at least one image first.'); return; }
+
+  clearGrid();
+
+  // Build the phrase list (or a single empty phrase if style = none)
+  const phrases = (styleEl.value === 'none') ? [''] : compilePhrases();
+
+  // Round‑robin assign each phrase to the next image so we don't duplicate
+  // the same phrase across all images. If phrases > images, some images get
+  // multiple phrases; if images > phrases, some images won't be used.
+  const imgs = state.images;
+  const total = Math.max(phrases.length, 1);
+
+  for (let i = 0; i < total; i++) {
+    const file = imgs[i % imgs.length];
+    const phrase = phrases[i] || '';
+
+    const top = (styleEl.value === 'top' || styleEl.value === 'both') ? normalizeCase(phrase) : '';
+    const bot  = (styleEl.value === 'bottom' || styleEl.value === 'both') ? normalizeCase(phrase) : '';
+
+    const c = makeCanvas();
+    const ctx = c.getContext('2d');
+
+    ctx.clearRect(0, 0, MAX, MAX);
+    fitAndCenter(ctx, file.img);
+    drawCaption(ctx, top, 'top');
+    drawCaption(ctx, bot, 'bottom');
+    drawWatermark(ctx);
+
+    addThumb(c, `${file.name}__${phrase || 'plain'}`, file);
+  }
+
+  count.textContent = state.canvases.length;
+}
+
 
   function removeBackgroundFromImage(img,tol=38){ const temp=document.createElement('canvas'); temp.width=img.width; temp.height=img.height; const tctx=temp.getContext('2d'); tctx.drawImage(img,0,0); const id=tctx.getImageData(0,0,temp.width,temp.height); const d=id.data; function sample(x,y){const i=(y*id.width+x)*4; return [d[i],d[i+1],d[i+2]];} const s=[sample(0,0),sample(id.width-1,0),sample(0,id.height-1),sample(id.width-1,id.height-1)]; const bg=s.reduce((a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],[0,0,0]).map(v=>v/4); for(let i=0;i<d.length;i+=4){ const dr=d[i]-bg[0], dg=d[i+1]-bg[1], db=d[i+2]-bg[2]; const dist=Math.sqrt(dr*dr+dg*dg+db*db); if(dist<tol || d[i+3]<10) d[i+3]=0; } tctx.putImageData(id,0,0); const cleaned=new Image(); cleaned.src=temp.toDataURL(); return cleaned; }
   function addHoverTools(container,file){ const tools=document.createElement('div'); tools.className='hover-tools'; const rm=document.createElement('button'); rm.className='btn'; rm.textContent='Remove BG'; rm.title='Quick background remover (solid bg)'; rm.addEventListener('click',()=>{ const newImg=removeBackgroundFromImage(file.img); newImg.onload=()=>{file.img=newImg; render();}; }); tools.appendChild(rm); container.appendChild(tools); }
