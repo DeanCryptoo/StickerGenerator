@@ -4,6 +4,15 @@ html,body{height:100%}
 body{margin:0;background:radial-gradient(1200px 800px at 10% -10%,rgba(34,211,238,.08),transparent),radial-gradient(900px 700px at 120% 10%,rgba(124,58,237,.09),transparent),var(--bg);color:var(--text);font:14px/1.4 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Apple Color Emoji","Segoe UI Emoji"}
 h1{font-size:22px;margin:0}
 
+/* Scrollbar styling (global) */
+*{scrollbar-color:#2f3654 transparent;scrollbar-width:thin}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(124,58,237,.45),rgba(34,211,238,.35));border-radius:999px;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,rgba(124,58,237,.75),rgba(34,211,238,.55))}
+.list::-webkit-scrollbar{width:8px}
+.list{scrollbar-width:thin}
+
 /* Split-screen app shell */
 .app{display:grid;grid-template-columns:360px minmax(0,1fr);height:calc(100vh - var(--header-h));overflow:hidden}
 aside{background:linear-gradient(180deg,rgba(255,255,255,.03),transparent 160px),var(--panel);border-right:1px solid var(--border);padding:18px 16px 22px;overflow:auto;height:100%}
