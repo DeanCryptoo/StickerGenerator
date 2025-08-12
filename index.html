@@ -8,25 +8,27 @@
 </head>
 <body>
   <div id="site-header"></div>
-  <script>/* load shared nav */(async()=>{try{const r=await fetch('nav.html');document.getElementById('site-header').innerHTML=await r.text();}catch(e){console.warn('nav load failed',e);}})();</script>
+  <script>(async()=>{try{const r=await fetch('nav.html');document.getElementById('site-header').innerHTML=await r.text();}catch(e){console.warn('nav load failed',e);}})();</script>
 
-  <main style="max-width:1200px;margin:20px auto;display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))">
-    <section class="card section">
-      <h2>Sticker Generator</h2>
-      <p class="muted">Create Telegram‑ready 512×512 PNG stickers with presets, typography controls, BG remover, and ZIP export.</p>
-      <div class="toolbar"><a class="btn primary" href="stickergenerator.html">Open</a></div>
-    </section>
+  <main class="wrap">
+    <section class="tiles">
+      <a class="tile" href="stickergenerator.html">
+        <h2>Sticker Generator</h2>
+        <p class="muted">Create Telegram‑ready 512×512 PNG stickers with presets, typography controls, BG remover, and ZIP export.</p>
+        <div class="actions"><span class="btn primary">Open</span></div>
+      </a>
 
-    <section class="card section">
-      <h2>Emoji / Spinner (beta)</h2>
-      <p class="muted">Generate a spinning coin with your logo and export frames as PNG (ZIP). Animated WebP/APNG coming soon.</p>
-      <div class="toolbar"><a class="btn" href="emojigenerator.html">Open</a></div>
-    </section>
+      <a class="tile" href="emojigenerator.html">
+        <h2>Emoji / Spinner (beta)</h2>
+        <p class="muted">Generate a spinning coin with your logo and export frames as PNG (ZIP). Animated WebP/APNG coming soon.</p>
+        <div class="actions"><span class="btn">Open</span></div>
+      </a>
 
-    <section class="card section">
-      <h2>Requests & Ideas</h2>
-      <p class="muted">What should we build next? Banner generator, chart meme maker, overlay templates?</p>
-      <div class="toolbar"><a class="btn ghost" href="mailto:hello@memeportal.fake">Contact</a></div>
+      <a class="tile" href="#">
+        <h2>Requests & Ideas</h2>
+        <p class="muted">What should we build next? Banner generator, chart meme maker, overlay templates?</p>
+        <div class="actions"><span class="btn ghost">Contact</span></div>
+      </a>
     </section>
   </main>
 </body>
